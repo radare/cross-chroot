@@ -1,0 +1,8 @@
+mmsdk todo
+==========
+* rename to something not 'maemo'
+
+Dependencies:
+-------------
+ - make
+ - wget

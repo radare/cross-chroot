@@ -1,0 +1,10 @@
+#!/bin/sh
+LD_LIBRARY_PATH=/shell/${ARCH}:/usr/lib:/lib
+ARCH=$1 #`uname -m`
+PATH=/shell/${ARCH}:/bin:/usr/bin:/sbin:/usr/sbin
+HOME=/home/user
+export LD_LIBRARY_PATH PATH HOME
+cd $HOME
+echo go run
+PS1="[\w@qemu-arm]> " /shell/${ARCH}/qemu-arm /bin/sh
+echo go end

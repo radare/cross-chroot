@@ -1,0 +1,101 @@
+#!/bin/sh
+# minimal maemo-sdk rootfs based on qemu-arm
+# -- pancake // nopcode.org
+
+ARCH=$1
+AUFS=$2
+if [ ! -d "shell" ]; then
+  echo "You must run this program from the root of the SDK rootfs:"
+  echo "shell/run.sh"
+  exit 1
+fi
+if [ ! $UID = 0 ]; then
+  echo "This script must run as root"
+  exit 1
+fi
+
+CHROOT=$PWD
+BINDIRS="usr lib bin tmp bin var home"
+if [ "$AUFS" = 1 ]; then
+  AUFS=1
+else
+  AUFS=0
+fi
+if [ -z "`mount | grep maemo`" ]; then
+  DOMOUNT=1
+else
+  DOMOUNT=0
+fi
+
+if [ $AUFS = 1 ]; then
+  if [ -z "`lsmod | grep aufs`" ]; then
+    echo "=> No aufs kernel module. Cannot bind rootfs into chroot"
+    AUFS=0
+  fi
+fi
+
+# enter environment
+echo "=> Rootfs at ${CHROOT} and arch is ${ARCH}"
+cd "${CHROOT}"
+if [ 1 = "${DOMOUNT}" ]; then
+  mkdir -p dev proc dev/pts sys etc lib bin run sys/fs/cgroup
+  for a in dev dev/pts proc proc/sys/fs/binfmt_misc sys run sys/fs/cgroup ; do
+    mount -o bind /$a $a
+  done
+
+  # Bind rootfs with aufs
+  if [ "$AUFS" = 1 ]; then
+    echo "=> Binding system directories"
+    (
+      for a in ${BINDIRS} ; do
+        mount -t aufs -o br=$a=rw:/$a=ro none $a
+      done
+    )
+  else
+    echo "=> Not binding system directories"
+  fi
+
+  echo "=> Registering ELF-ARM binaries to be handled by qemu-arm..."
+  mount binfmt_misc -t binfmt_misc proc/sys/fs/binfmt_misc
+  #echo ":qemu-arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfb\xff\xff\xff:/shell/${ARCH}/qemu-arm:" 2>/dev/null > proc/sys/fs/binfmt_misc/register
+  echo ":qemu-arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfb\xff\xff\xff:/shell/qemu-arm:" 2>/dev/null > proc/sys/fs/binfmt_misc/register
+
+# FMI http://www.yak.net/repos/extern/qemu-kvm-0.14.0/scripts/qemu-binfmt-conf.sh.txt
+# mips
+    # FIXME: We could use the other endianness on a MIPS host.
+    echo   ':mips:M::\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/shell/qemu-mips:' > /proc/sys/fs/binfmt_misc/register
+    echo   ':mipsel:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/shell/qemu-mips:' > /proc/sys/fs/binfmt_misc/register
+    echo   ':mipsn32:M::\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/shell/qemu-mips:' > /proc/sys/fs/binfmt_misc/register
+    echo   ':mipsn32el:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/shell/qemu-mips:' > /proc/sys/fs/binfmt_misc/register
+    echo   ':mips64:M::\x7fELF\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/shell/qemu-mips:' > /proc/sys/fs/binfmt_misc/register
+    echo   ':mips64el:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/shell/qemu-mips:' > /proc/sys/fs/binfmt_misc/register
+
+    echo   ':sparc:M::\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x02:\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/shell/qemu-sparc:' > /proc/sys/fs/binfmt_misc/register
+
+    echo   ':ppc:M::\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x14:\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/shell/qemu-ppc:' > /proc/sys/fs/binfmt_misc/register
+
+    echo   ':m68k:M::\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x04:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/shell/qemu-m68k:' > /proc/sys/fs/binfmt_misc/register
+else
+  echo "==> Not mounting anything. They are already mounted :)"
+fi
+
+echo "=> Copying resolv.conf..."
+cp -f /etc/resolv.conf etc/
+
+echo "=> Welcome to the arm chroot environment"
+PS1="[\w@qemu-${ARCH}]> "
+chroot . /shell/qemu-${ARCH} /bin/bash
+
+echo
+echo "=> Bye bye! hope to see you soon"
+# quit environment
+if [ 1 = "${DOMOUNT}" ]; then
+  for a in run sys/fs/cgroup sys proc/sys/fs/binfmt_misc dev/pts dev proc ; do
+    umount $a
+  done
+  if [ "$AUFS" = 1 ]; then
+    for a in ${BINDIRS} ; do
+      umount $a
+    done
+  fi
+fi

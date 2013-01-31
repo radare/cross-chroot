@@ -1,0 +1,67 @@
+#!/bin/sh
+
+alias decho='printf "\033[33m%s\033[0m\n"'
+alias becho='printf "\033[32m%s\033[0m\n"'
+
+WGET="wget -nv -c"
+
+. ./config.mk
+
+if [ -z "$DIST" ]; then
+  echo "Usage: ./setup-rootfs [arch|maemo|stali|gentoo]"
+  exit 1
+fi
+if [ ! "`id -u`" = 0 ]; then
+  echo "You need to be root"
+  exit 1
+fi
+
+[ -e "${ROOT}/etc/.${DIST}" ] && exit 0
+
+REPO=$(echo "\${${ARCH}_${DIST}_REPO}" | tr 'a-z' 'A-Z')
+FILE=$(echo "\${${ARCH}_${DIST}_FILE}" | tr 'a-z' 'A-Z')
+REPO=`eval echo $REPO`
+FILE=`eval echo $FILE`
+
+if [ -e "${ROOT}/etc/.${DIST}" ]; then
+  echo "You already have arch installed. 'make mrproper' first."
+  exit 1
+fi
+${WGET} ${REPO}/${FILE}
+mkdir -p ${ROOT}
+if [ -n "`echo ${FILE}| grep bz2`" ]; then
+  TARFLAGS=xjf
+elif [ -n "`echo ${FILE}| grep xz`" ]; then
+  TARFLAGS=xJf
+else
+  TARFLAGS=xzf
+fi
+decho "Uncompressing rootfs"
+tar ${TARFLAGS} ${FILE} -C ${ROOT}
+decho "Setting up rootfs"
+echo ${DIST} > ${ROOT}/etc/issue
+touch ${ROOT}/etc/.arch
+mkdir -p ${ROOT}/shell
+cp -rf base/shell/* ${ROOT}/shell
+echo ARCH=${ARCH} > ${ROOT}/shell/config.mk
+echo DIST=${DIST} >> ${ROOT}/shell/config.mk
+mkdir -p ${ROOT}/bin ${ROOT}/home/user ${ROOT}/etc
+
+#extra stuff
+case "${DIST}" in
+"arch")
+  tar ${TARFLAGS} ${ARCH_FILE} -C ${ROOT}
+  mkdir -p ${ROOT}/bin ${ROOT}/home/user ${ROOT}/etc
+  ;;
+"maemo")
+  mkdir -p ${ROOT}/var/log/apt ${ROOT}/bin ${ROOT}/home/user ${ROOT}/etc
+  echo deb http://repository.maemo.org/extras/ fremantle free non-free >> ${ROOT}/etc/apt/sources.list
+  echo deb http://repository.maemo.org/extras-devel/ fremantle free non-free >> ${ROOT}/etc/apt/sources.list
+  ;;
+"stali")
+  echo stali > ${ROOT}/etc/issue
+  touch ${ROOT}/etc/.stali
+  ;;
+esac
+
+exit 0
