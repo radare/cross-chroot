@@ -80,11 +80,17 @@ else
 fi
 
 echo "=> Copying resolv.conf..."
+rm -f etc/resolv.conf
 cp -f /etc/resolv.conf etc/
 
 echo "=> Welcome to the arm chroot environment"
 PS1="[\w@qemu-${ARCH}]> "
-chroot . /shell/qemu-${ARCH} /bin/bash
+if [ -f ./bin/bash ]; then
+	SHLL=/bin/bash
+else
+	SHLL=/bin/sh
+fi
+chroot . /shell/qemu-${ARCH} ${SHLL}
 
 echo
 echo "=> Bye bye! hope to see you soon"

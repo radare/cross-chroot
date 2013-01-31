@@ -3,6 +3,9 @@
 include config.mk
 
 all: setup
+	${MAKE} run
+
+run:
 	cd ${ROOT} && sudo shell/run ${ARCH} ${AUFS}
 
 build-qemu:
