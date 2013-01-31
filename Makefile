@@ -2,18 +2,18 @@
 # this is experimental, not enabled by default
 include config.mk
 
-all: setup
+all: ${ROOT}
 	${MAKE} run
 
 run:
 	cd ${ROOT} && sudo shell/run ${ARCH} ${AUFS}
 
-build-qemu:
+base/shell/qemu-${ARCH}:
 	./build-qemu.sh
 
-setup: build-qemu
-	./setup-rootfs
-	cp -f build-qemu/qemu-1.3.1/${ARCH}-linux-user/qemu-${ARCH} ${ROOT}/shell
+${ROOT}: base/shell/qemu-${ARCH}
+	@./setup-rootfs
+	@cp -f build-qemu/qemu-1.3.1/${ARCH}-linux-user/qemu-${ARCH} ${ROOT}/shell
 
 clean:
 	# TODO: cleanup all use reference

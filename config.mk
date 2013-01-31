@@ -1,12 +1,12 @@
-ARCH=arm
 ROOT=rootfs
-DIST=stali
 QV=1.3.1
 
-ARCH=mips
-DIST=gentoo
-
 ARCH=arm
+#ARCH=mips
+#ARCH=mipsel
+
+#DIST=stali
+#DIST=gentoo
 DIST=arch
 
 AUFS=0
@@ -22,3 +22,6 @@ ARM_ARCH_FILE=ArchLinuxARM-armv5te-latest.tar.gz
 
 MIPS_GENTOO_REPO=http://distfiles.gentoo.org/experimental/mips/uclibc/
 MIPS_GENTOO_FILE=stage3-mips32r2-uclibc-hardened-20121227.tar.bz2
+
+MIPSEL_DDWRT_REPO=https://sites.google.com/site/mipsellinuxwithfirmwarehowto/firmwarehowto/running-openwrtkamikaze-or-dd-wrt24-in-qemu/
+MIPSEL_DDWRT_FILE=dd-wrt24-mipsfs.tar.bz2

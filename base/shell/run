@@ -1,6 +1,5 @@
 #!/bin/sh
-# minimal maemo-sdk rootfs based on qemu-arm
-# -- pancake // nopcode.org
+# -- pancake - 2009 - 2013
 
 ARCH=$1
 AUFS=$2
@@ -9,7 +8,7 @@ if [ ! -d "shell" ]; then
   echo "shell/run.sh"
   exit 1
 fi
-if [ ! $UID = 0 ]; then
+if [ ! "`id -u`" = 0 ]; then
   echo "This script must run as root"
   exit 1
 fi
@@ -21,7 +20,7 @@ if [ "$AUFS" = 1 ]; then
 else
   AUFS=0
 fi
-if [ -z "`mount | grep maemo`" ]; then
+if [ -z "`mount | grep /rootfs/`" ]; then
   DOMOUNT=1
 else
   DOMOUNT=0
@@ -35,7 +34,7 @@ if [ $AUFS = 1 ]; then
 fi
 
 # enter environment
-echo "=> Rootfs at ${CHROOT} and arch is ${ARCH}"
+echo "=> rootfs at ${CHROOT} and arch is ${ARCH}"
 cd "${CHROOT}"
 if [ 1 = "${DOMOUNT}" ]; then
   mkdir -p dev proc dev/pts sys etc lib bin run sys/fs/cgroup
@@ -55,7 +54,8 @@ if [ 1 = "${DOMOUNT}" ]; then
     echo "=> Not binding system directories"
   fi
 
-  echo "=> Registering ELF-ARM binaries to be handled by qemu-arm..."
+  echo "=> Registering ELF-ARM binaries to be handled by qemu-arch"
+  modprobe binfmt_misc 2> /dev/null
   mount binfmt_misc -t binfmt_misc proc/sys/fs/binfmt_misc
   #echo ":qemu-arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfb\xff\xff\xff:/shell/${ARCH}/qemu-arm:" 2>/dev/null > proc/sys/fs/binfmt_misc/register
   echo ":qemu-arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfb\xff\xff\xff:/shell/qemu-arm:" 2>/dev/null > proc/sys/fs/binfmt_misc/register
@@ -83,7 +83,7 @@ echo "=> Copying resolv.conf..."
 rm -f etc/resolv.conf
 cp -f /etc/resolv.conf etc/
 
-echo "=> Welcome to the arm chroot environment"
+echo "=> Welcome to the ${ARCH} chroot environment"
 PS1="[\w@qemu-${ARCH}]> "
 if [ -f ./bin/bash ]; then
 	SHLL=/bin/bash
